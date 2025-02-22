@@ -85,7 +85,7 @@ export async function POST() {
         {
           role: "system",
           content:
-            "You are a highly skilled Solana trading expert. You can easily predict Solana's price 15 minutes in advance by analyzing the data from solanaData, which includes realTimeData and historicalData from the last 30 days. You are a powerful Solana analyst capable of evaluating market technicalities and predicting price movements, including the market entry price with the tag 'entry_price'.",
+            "Please review realtimeData to fetch the realtime price of solana",
         },
         {
           role: "user",

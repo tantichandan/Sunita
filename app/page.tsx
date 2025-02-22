@@ -1,3 +1,5 @@
+
+import SolanaAnalyzerandTrade from "@/components/automateTradeAfterAnalyse"
 import Balance from "@/components/Balance"
 import SolanaHistoricalChart from "@/components/BinanceRealTimeData"
 import OrderPage from "@/components/OrderHistory"
@@ -19,6 +21,7 @@ export default function Home() {
       <TradeMonitor/>
       <Balance />
       <OrderPage />
+      <SolanaAnalyzerandTrade/>
       
       
       

@@ -15,7 +15,7 @@ export default function SolanaAnalyzer() {
     setError(null)
 
     try {
-      const response = await fetch("/api/analyze-solana", {
+      const response = await fetch("/api/example-solana", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
