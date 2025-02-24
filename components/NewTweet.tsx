@@ -25,46 +25,71 @@ export default function NewestTweets() {
   const [error, setError] = useState<string | null>(null)
 
   const fetchTweets = async () => {
-    setLoading(true)  // Show loading state
-    setError(null)    // Clear previous errors
+    setLoading(true);
+    setError(null);
   
     try {
-      const response = await fetch("/api/solana")  // Call the API
-      console.log("Fetching tweets... Response Status:", response.status)  // Log API response status
+      const response = await fetch("/api/solana");
+      console.log("Fetching tweets... Response Status:", response.status);
   
-      const data = await response.json()  // Convert response to JSON
-      console.log("Fetched Data:", data)  // Log the whole response to check
+      const data = await response.json();
+      console.log("Fetched Data:", data);
   
-      // Check if "results" exist and have tweets
-      if (!data || !data.results || data.results.length === 0) {
-        console.warn("No tweets found in response:", data)  // Log warning
-        setTweets([])  // Set empty list
-        return
+      // Check if "results" exist and contain tweets
+      if (!data || !data.results || !Array.isArray(data.results) || data.results.length === 0) {
+        console.warn("No tweets found in response:", data);
+        setTweets([]);
+        return;
       }
   
-      // 🔥 Extract tweets from each user inside "results"
+      // 🔥 Extract tweets safely
       const extractedTweets = data.results.flatMap((user: any) =>
-        user.tweets.map((tweet: any) => ({
-          id: tweet.rest_id,  // Tweet ID
-          text: tweet.legacy?.full_text || "No text available",  // Tweet text
+        user.tweets?.map((tweet: any) => ({
+          id: tweet?.rest_id ?? "unknown",
+          text: tweet?.legacy?.full_text ?? "No text available",
           author: {
-            name: tweet.core?.user_results?.result?.legacy?.name || "Unknown",  // Name of author
-            username: tweet.core?.user_results?.result?.legacy?.screen_name || "Unknown",  // Twitter handle
-            profileImage: tweet.core?.user_results?.result?.legacy?.profile_image_url_https || "",  // Profile picture
+            name: tweet?.core?.user_results?.result?.legacy?.name ?? "Unknown",
+            username: tweet?.core?.user_results?.result?.legacy?.screen_name ?? "Unknown",
+            profileImage: tweet?.core?.user_results?.result?.legacy?.profile_image_url_https ?? "",
           },
-          createdAt: tweet.legacy?.created_at || "",  // When it was posted
-        }))
-      )
+          createdAt: tweet?.legacy?.created_at ?? "",
+        })) ?? [] // Ensure empty array if tweets are undefined
+      );
   
-      console.log("Extracted Tweets:", extractedTweets)  // Log extracted tweets
-      setTweets(extractedTweets)  // Update the state with tweets
+      console.log("Extracted Tweets:", extractedTweets);
+  
+      // Ensure extractedTweets is a valid array before proceeding
+      if (!Array.isArray(extractedTweets) || extractedTweets.length === 0) {
+        console.warn("Extracted tweets is empty or invalid:", extractedTweets);
+        setTweets([]);
+        return;
+      }
+  
+      // 🔥 Keep only the latest tweet per user
+      const latestTweetsMap = new Map<string, Tweet>();
+  
+      extractedTweets.forEach((tweet) => {
+        if (!tweet || !tweet.author?.username) return; // Ensure valid tweet
+  
+        const existingTweet = latestTweetsMap.get(tweet.author.username);
+  
+        if (!existingTweet || new Date(tweet.createdAt) > new Date(existingTweet.createdAt)) {
+          latestTweetsMap.set(tweet.author.username, tweet);
+        }
+      });
+  
+      const latestTweets = Array.from(latestTweetsMap.values());
+      console.log("Latest Tweets Per User:", latestTweets);
+  
+      setTweets(latestTweets);
     } catch (err: any) {
-      console.error("Error fetching tweets:", err)  // Log errors
-      setError(err.message || "Failed to fetch tweets")  // Show error message
+      console.error("Error fetching tweets:", err);
+      setError(err.message || "Failed to fetch tweets");
     } finally {
-      setLoading(false)  // Stop loading
+      setLoading(false);
     }
-  }
+  };
+  
   
 
   return (
