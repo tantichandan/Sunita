@@ -1,69 +1,91 @@
 "use client"
-
 import { useEffect, useState } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Alert, AlertDescription } from "@/components/ui/alert"
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Skeleton } from "@/components/ui/skeleton"
 
-interface PriceData {
-  time: string
-  close: number
+const fetchHistoricalData = async () => {
+  const response = await fetch("https://api.binance.com/api/v3/klines?symbol=SOLUSDT&interval=1h&limit=720")
+  if (!response.ok) throw new Error("Failed to fetch historical data")
+  const data = await response.json()
+
+  return data.map((candle: any) => ({
+    time: new Date(candle[0]).toLocaleString(),
+    close: Number.parseFloat(candle[4]),
+  }))
 }
 
-export default function SolanaHistoricalChart() {
-  const [priceHistory, setPriceHistory] = useState<PriceData[]>([])
-  const [error, setError] = useState<string | null>(null)
-  const [loading, setLoading] = useState<boolean>(true)
+export default function TradeHistoryChart() {
+  const [historicalData, setHistoricalData] = useState([])
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const fetchHistoricalData = async () => {
+    const loadData = async () => {
       try {
-        setLoading(true)
-        setError(null)
-
-        const response = await fetch("/api/binance-keys") // API route
-        if (!response.ok) throw new Error("Failed to fetch price data")
-
-        const data = await response.json()
-        setPriceHistory(data)
+        const data = await fetchHistoricalData()
+        setHistoricalData(data)
       } catch (error) {
         console.error("Error fetching historical data:", error)
-        setError("Failed to load historical data")
       } finally {
         setLoading(false)
       }
     }
-
-    fetchHistoricalData()
+    loadData()
   }, [])
 
   return (
-    <Card className="w-full max-w-3xl">
+    <Card className="w-full max-w-4xl mx-auto bg-gradient-to-br from-gray-900 to-gray-800">
       <CardHeader>
-        <CardTitle className="flex justify-between items-center">
-          <span>Solana 30-Day Price Chart</span>
-        </CardTitle>
+        <CardTitle className="text-2xl font-bold text-white">Solana (SOL) Trade History - Last 30 Days</CardTitle>
       </CardHeader>
       <CardContent>
-        {error ? (
-          <Alert variant="destructive">
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        ) : loading ? (
-          <div className="text-center text-muted-foreground">Loading...</div>
+        {loading ? (
+          <div className="space-y-2">
+            <Skeleton className="h-[400px] w-full bg-gray-700" />
+            <div className="flex justify-between">
+              <Skeleton className="h-4 w-[100px] bg-gray-700" />
+              <Skeleton className="h-4 w-[100px] bg-gray-700" />
+            </div>
+          </div>
         ) : (
-          <div className="h-[300px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={priceHistory}>
-                <XAxis dataKey="time" tickFormatter={(time) => new Date(time).toLocaleDateString()} />
-                <YAxis />
-                <Tooltip labelFormatter={(label) => new Date(label).toLocaleString()} />
-                <Line type="monotone" dataKey="close" stroke="hsl(var(--primary))" dot={false} />
+          <div className="relative">
+            <ResponsiveContainer width="100%" height={400}>
+              <LineChart data={historicalData}>
+                <XAxis
+                  dataKey="time"
+                  tick={{ fill: "white", fontSize: 12 }}
+                  tickFormatter={(value) => new Date(value).toLocaleDateString()}
+                />
+                <YAxis
+                  domain={["auto", "auto"]}
+                  tick={{ fill: "white", fontSize: 12 }}
+                  tickFormatter={(value) => `$${value.toFixed(2)}`}
+                />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: "rgba(17, 24, 39, 0.8)",
+                    borderRadius: "8px",
+                    border: "none",
+                    boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
+                  }}
+                  labelStyle={{ color: "#9CA3AF" }}
+                  itemStyle={{ color: "#4ADE80" }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="close"
+                  stroke="#4ADE80"
+                  strokeWidth={2}
+                  dot={false}
+                  activeDot={{ r: 8, fill: "#4ADE80", stroke: "#064E3B" }}
+                />
               </LineChart>
             </ResponsiveContainer>
+            <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-t from-gray-900 to-transparent opacity-20 pointer-events-none" />
           </div>
         )}
       </CardContent>
     </Card>
   )
 }
+

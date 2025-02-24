@@ -2,11 +2,18 @@
 import SolanaAnalyzerandTrade from "@/components/automateTradeAfterAnalyse"
 import Balance from "@/components/Balance"
 import SolanaHistoricalChart from "@/components/BinanceRealTimeData"
+import NewestTweets from "@/components/NewTweet"
+import SolanaTweets from "@/components/NewTweet"
+
+
 import OrderPage from "@/components/OrderHistory"
+import SolanaPriceMonitorBinance from "@/components/realtimeBinance"
 import SolanaAnalyzer from "@/components/SolanaAnalyzer"
-import SolanaPriceMonitorandTrade from "@/components/SolanaPriceMonitor"
 import SolanaPriceMonitor from "@/components/SolanaPriceMonitor"
 import TradeMonitor from "@/components/TradeMonitor"
+import SolanaNews from "@/components/TweetFeed"
+
+
 
 export default function Home() {
   return (
@@ -17,11 +24,22 @@ export default function Home() {
 
       <SolanaHistoricalChart />
       <SolanaPriceMonitor />
+      <SolanaPriceMonitorBinance />
       <SolanaAnalyzer /> 
       <TradeMonitor/>
       <Balance />
-      <OrderPage />
+      
       <SolanaAnalyzerandTrade/>
+      <OrderPage />
+      <NewestTweets/>
+      
+      
+      
+      
+      <SolanaNews/>
+      
+     
+      
       
       
       

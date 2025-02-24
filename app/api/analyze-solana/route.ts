@@ -1,81 +1,93 @@
 import { NextResponse } from "next/server"
 import { Connection } from "@solana/web3.js"
 import OpenAI from "openai"
-import Binance from "binance-api-node"
 
+// Initialize OpenAI
 const openai = new OpenAI({
   apiKey: process.env.OPEN_AI_KEY,
 })
 
-const binanceClient = Binance({
-  apiKey: process.env.BN_RAPI_KEY,
-  apiSecret: process.env.BN_RSECRECT_KEY,
-})
+// Binance API URLs
+const BINANCE_REALTIME_URL = "https://api.binance.com/api/v3/ticker/price?symbol=SOLUSDT"
+const BINANCE_HISTORICAL_URL = "https://api.binance.com/api/v3/klines?symbol=SOLUSDT&interval=1h&limit=720" // Last 30 days (24h * 30)
+
+// Fetch real-time SOL price from Binance
+async function fetchBinanceRealTimePrice() {
+  try {
+    const response = await fetch(BINANCE_REALTIME_URL)
+    const data = await response.json()
+    return parseFloat(data.price)
+  } catch (error) {
+    console.error("❌ Error fetching real-time SOL price from Binance:", error)
+    return null
+  }
+}
+
+// Fetch historical SOLUSDT data (last 30 days, 1-hour candles)
+async function fetchBinanceHistoricalData() {
+  try {
+    const response = await fetch(BINANCE_HISTORICAL_URL)
+    const data = await response.json()
+
+    return data.map((candle: any) => ({
+      time: new Date(candle[0]).toISOString(),
+      open: parseFloat(candle[1]),
+      high: parseFloat(candle[2]),
+      low: parseFloat(candle[3]),
+      close: parseFloat(candle[4]),
+      volume: parseFloat(candle[5]),
+    }))
+  } catch (error) {
+    console.error("❌ Error fetching historical SOLUSDT data from Binance:", error)
+    return null
+  }
+}
+
+// Fetch Solana Web3 real-time network data
+async function fetchSolanaNetworkData() {
+  const connection = new Connection("https://api.devnet.solana.com", "confirmed")
+  try {
+    const [epochInfo, recentBlockhash] = await Promise.all([
+      connection.getEpochInfo(),
+      connection.getLatestBlockhash(),
+    ])
+    return {
+      slotHeight: epochInfo.slotsInEpoch,
+      absoluteSlot: epochInfo.absoluteSlot,
+      recentBlockhash: recentBlockhash.blockhash,
+    }
+  } catch (error) {
+    console.error("❌ Error fetching Solana network data:", error)
+    return null
+  }
+}
 
 export async function POST() {
   try {
-    // Validate OpenAI API key
     if (!process.env.OPEN_AI_KEY) {
-      throw new Error("OpenAI API key is not configured")
+      throw new Error("⚠️ OpenAI API key is missing")
     }
 
-    // Connect to Solana Web3 for real-time network data
-    const connection = new Connection("https://api.devnet.solana.com", "confirmed")
+    // Fetch all data in parallel
+    const [realTimePrice, historicalData, solanaNetworkData] = await Promise.all([
+      fetchBinanceRealTimePrice(),
+      fetchBinanceHistoricalData(),
+      fetchSolanaNetworkData(),
+    ])
 
-    let solanaRealTimeData
-    try {
-      const [epochInfo, recentBlockhash] = await Promise.all([
-        connection.getEpochInfo(),
-        connection.getLatestBlockhash(),
-      ])
-
-      solanaRealTimeData = {
-        slotHeight: epochInfo.slotsInEpoch,
-        absoluteSlot: epochInfo.absoluteSlot,
-        recentBlockhash: recentBlockhash.blockhash,
-      }
-    } catch (error) {
-      console.error("Error fetching Solana real-time data:", error)
-      solanaRealTimeData = null
+    if (!realTimePrice) {
+      throw new Error("⚠️ Failed to fetch real-time SOL price from Binance")
     }
 
-    // Fetch historical SOLUSDT data from Binance (last 30 days)
-    let historicalData
-    try {
-      const now = Date.now()
-      const oneDayMs = 24 * 60 * 60 * 1000
-      const thirtyDaysAgo = now - 30 * oneDayMs
-
-      const candles = await binanceClient.futuresCandles({
-        symbol: "SOLUSDT",
-        interval: "1h",
-        startTime: thirtyDaysAgo,
-        endTime: now,
-        limit: 1000,
-      })
-
-      historicalData = candles.map((candle) => ({
-        time: new Date(candle.openTime).toISOString(),
-        open: parseFloat(candle.open),
-        high: parseFloat(candle.high),
-        low: parseFloat(candle.low),
-        close: parseFloat(candle.close),
-        volume: parseFloat(candle.volume),
-      }))
-    } catch (error) {
-      console.error("Error fetching historical SOLUSDT data from Binance:", error)
-      historicalData = null
-    }
-
-    // If both data fetches failed, return error
-    if (!solanaRealTimeData && !historicalData) {
-      throw new Error("Failed to fetch both Solana real-time data and Binance historical data")
+    if (!historicalData) {
+      throw new Error("⚠️ Failed to fetch historical SOLUSDT data from Binance")
     }
 
     // Prepare data for AI analysis
     const solanaData = {
-      realTimeData: solanaRealTimeData || "Real-time data unavailable",
-      historicalData: historicalData || "Historical data unavailable",
+      realTimePrice,
+      historicalData,
+      solanaNetworkData: solanaNetworkData || "Solana network data unavailable",
     }
 
     // Use OpenAI to analyze the data
@@ -84,12 +96,11 @@ export async function POST() {
       messages: [
         {
           role: "system",
-          content:
-            "Please review realtimeData to fetch the realtime price of solana",
+          content: "You are a highly skilled Solana trading expert with deep expertise in market analysis.  You have knowledge on machine learning, and analyze the moving average, and all other factors efficiently. You have vast knowledge on Time Series Forecasting, Regression Models, Clustering to identify the best time to enter in the market. Use your knowledge to give us the best profitable entry point, and the reason why we should go with that. You have the ability to give a profitable strategy by reviewing the realTimePrice, historicalData for 30 days, and solanaNetworkData to buy solana in next 24 hours period. Additionally, you can review the realTimePrice to give me the entry point for maximum 15 minutes trading, this response should be in the fromat as 'entry_price: [number]. You also have the ability review other factors such as news, twitter, and google trend which can possibly affect the price of solana.",
         },
         {
           role: "user",
-          content: `Analyze this Solana and Binance data and provide a trading strategy: ${JSON.stringify(solanaData)}`,
+          content: `Here is the data: ${JSON.stringify(solanaData)}. Generate a trading strategy.`,
         },
       ],
     })
@@ -98,16 +109,14 @@ export async function POST() {
 
     return NextResponse.json({
       analysis,
-      realTimeDataAvailable: solanaRealTimeData ? true : false,
-      historicalDataAvailable: historicalData ? true : false,
+      realTimePrice,
+      historicalData,
+      solanaNetworkData,
     })
   } catch (error) {
-    console.error("Error in Solana analysis:", error)
+    console.error("❌ Error in Solana analysis:", error)
     return NextResponse.json(
-      {
-        error: error instanceof Error ? error.message : "An error occurred during analysis",
-        timestamp: Date.now(),
-      },
+      { error: error instanceof Error ? error.message : "An error occurred", timestamp: Date.now() },
       { status: 500 },
     )
   }

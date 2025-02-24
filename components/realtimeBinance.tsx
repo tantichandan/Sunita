@@ -11,7 +11,7 @@ interface PriceData {
   price: number
 }
 
-export default function SolanaPriceMonitor() {
+export default function SolanaPriceMonitorBinance() {
   const [priceHistory, setPriceHistory] = useState<PriceData[]>([])
   const [currentPrice, setCurrentPrice] = useState<number | null>(null)
   const [previousPrice, setPreviousPrice] = useState<number | null>(null)
@@ -21,32 +21,28 @@ export default function SolanaPriceMonitor() {
   const fetchPrice = useCallback(
     async (retry = 0) => {
       try {
-        const response = await fetch("/api/solana-price", {
-          method: "GET",
-          headers: {
-            Accept: "application/json",
-          },
-        })
+        const response = await fetch("https://api.binance.com/api/v3/ticker/price?symbol=SOLUSDT")
 
         if (!response.ok) {
-          const errorData = await response.json()
-          throw new Error(errorData.error || `HTTP error! status: ${response.status}`)
+          throw new Error(`HTTP error! status: ${response.status}`)
         }
 
         const data = await response.json()
 
-        if (!data || typeof data.price !== "number") {
+        if (!data || typeof data.price !== "string") {
           throw new Error("Invalid price data received")
         }
 
+        const newPrice = Number.parseFloat(data.price)
+
         setPreviousPrice(currentPrice)
-        setCurrentPrice(data.price)
+        setCurrentPrice(newPrice)
         setPriceHistory((prev) =>
           [
             ...prev,
             {
               timestamp: Date.now(),
-              price: data.price,
+              price: newPrice,
             },
           ].slice(-20),
         )
@@ -74,7 +70,7 @@ export default function SolanaPriceMonitor() {
     fetchPrice()
     const interval = setInterval(() => {
       fetchPrice()
-    }, 5000)
+    }, 5000) // Fetch every 5 seconds
 
     return () => {
       clearInterval(interval)
@@ -88,7 +84,7 @@ export default function SolanaPriceMonitor() {
     <Card className="w-full max-w-2xl bg-gradient-to-br from-gray-900 to-gray-800 text-white shadow-lg">
       <CardHeader className="border-b border-gray-700">
         <CardTitle className="flex flex-col sm:flex-row justify-between items-center gap-4">
-          <span className="text-2xl font-bold">Coingecko realtime Solana price</span>
+          <span className="text-2xl font-bold">Solana realtime price- Binance</span>
           {currentPrice && (
             <div className="flex items-center gap-2">
               <span className="text-3xl font-bold">${currentPrice.toFixed(2)}</span>
