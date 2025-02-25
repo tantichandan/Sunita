@@ -17,7 +17,7 @@ export default function SolanaAnalyzerandTrade() {
     setError(null);
 
     try {
-      const response = await fetch("/api/example-solana", { method: "POST" });
+      const response = await fetch("/api/realtime", { method: "POST" });
       const data = await response.json();
       if (!response.ok)
         throw new Error(data.error || "Failed to analyze Solana data");
@@ -133,9 +133,9 @@ export default function SolanaAnalyzerandTrade() {
 
   const sellTrade = async (entryPrice: number, quantity: number): Promise<void> => {
     try {
-      const takeProfitPrice = (entryPrice * 1.25).toFixed(2); // 25% profit
-      const stopLossTriggerPrice = (entryPrice * 0.92).toFixed(2); // 8% stop-loss trigger
-      const stopLossLimitPrice = (entryPrice * 0.915).toFixed(2); // Slightly lower than trigger
+      const takeProfitPrice = (entryPrice * 1.05).toFixed(2); // 5% profit
+      const stopLossTriggerPrice = (entryPrice * 0.98).toFixed(2); // 3% stop-loss trigger
+      const stopLossLimitPrice = (entryPrice * 0.97).toFixed(2); // Slightly lower than trigger
 
       console.log(`📊 Entry Price: ${entryPrice}`);
       console.log(`🎯 Selling at: ${takeProfitPrice} (Limit Order)`);

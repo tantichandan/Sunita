@@ -26,10 +26,12 @@ export default function Home() {
       <SolanaPriceMonitor />
       <SolanaPriceMonitorBinance />
       <SolanaAnalyzer /> 
-      <TradeMonitor/>
-      <Balance />
+      
+      
       
       <SolanaAnalyzerandTrade/>
+      <Balance />
+      <TradeMonitor/>
       <OrderPage />
       <NewestTweets/>
       
