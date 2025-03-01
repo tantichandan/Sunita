@@ -5,9 +5,9 @@ import dotenv from "dotenv";
 dotenv.config();
 
 const client = Binance({
-  apiKey: process.env.API_SPOT!,
-  apiSecret: process.env.SECRECT_KEY_SPOT!,
-  httpBase: "https://testnet.binance.vision",
+  apiKey: process.env.BINANCE_API_KEY!,
+  apiSecret: process.env.BINANCE_API_SECRET!,
+  
 });
 
 export async function POST(req: Request) {

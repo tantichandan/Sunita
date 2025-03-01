@@ -19,7 +19,7 @@ const userIds = [
 const delay = (ms: number) => new Promise((res) => setTimeout(res, ms));
 
 async function fetchSolanaTweets(userId: string) {
-  const url = `https://twitter241.p.rapidapi.com/user-tweets?user=${userId}&count=8&query=solana`;
+  const url = `https://twitter241.p.rapidapi.com/user-tweets?user=${userId}&count=18&query=solana`;
 
   const headers = {
     "X-RapidAPI-Key": process.env.NEXT_PUBLIC_RAPIDAPI_KEY as string,

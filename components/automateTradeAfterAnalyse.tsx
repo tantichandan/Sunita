@@ -133,7 +133,7 @@ export default function SolanaAnalyzerandTrade() {
 
   const sellTrade = async (entryPrice: number, quantity: number): Promise<void> => {
     try {
-      const takeProfitPrice = (entryPrice * 1.05).toFixed(2); // 5% profit
+      const takeProfitPrice = (entryPrice * 1.04).toFixed(2); // 5% profit
       const stopLossTriggerPrice = (entryPrice * 0.98).toFixed(2); // 3% stop-loss trigger
       const stopLossLimitPrice = (entryPrice * 0.97).toFixed(2); // Slightly lower than trigger
 

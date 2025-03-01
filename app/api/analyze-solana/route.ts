@@ -13,7 +13,8 @@ const openai = new OpenAI({
 // Binance API URLs
 const FUNDING_RATE_URL = "https://fapi.binance.com/fapi/v1/fundingRate?symbol=SOLUSDT";
 const BINANCE_ORDER_BOOK_URL = "https://api.binance.com/api/v3/depth?symbol=SOLUSDT&limit=50";
-const SOLANA_API_URL = "http://localhost:3000/api/solana" // Adjust in production
+const FIRE_BASE_URL="http://localhost:3000/api/firebase1";
+
 const BINANCE_REALTIME_URL = "https://api.binance.com/api/v3/ticker/price?symbol=SOLUSDT"
 const BINANCE_HISTORICAL_URL = "https://api.binance.com/api/v3/klines?symbol=SOLUSDT&interval=1h&limit=720" // Last 30 days (24h * 30)
 
@@ -73,24 +74,25 @@ async function fetchFundingRate() {
 
 
 
-async function fetchSolanaTweets() {
+// Assuming you want to fetch tweets from `/api/firebase1`
+async function fetchFirebaseTweets() {
   try {
-    const response = await fetch(SOLANA_API_URL)
-    const data = await response.json()
+    // Fetch the tweets from the /api/firebase1 endpoint on the same local server
+    const response = await fetch(FIRE_BASE_URL);
+    const data = await response.json();
 
-    if (!data || !Array.isArray(data.results) || data.results.length === 0) {
-      throw new Error("No tweets found for analysis")
+    if (!data || !Array.isArray(data.tweets) || data.tweets.length === 0) {
+      throw new Error("No tweets found for analysis");
     }
 
-    // ✅ Extract only tweet text
-    return data.results.flatMap((user: any) =>
-      user.tweets.map((tweet: any) => tweet.legacy.full_text)
-    )
+    // ✅ Extract only tweet text from the response
+    return data.tweets.map((tweet: any) => tweet.legacy.full_text);
   } catch (error) {
-    console.error("❌ Error fetching Solana tweets:", error)
-    return []
+    console.error("❌ Error fetching Firebase tweets:", error);
+    return [];
   }
 }
+
 
 async function fetchBinanceOrderBook() {
   try {
@@ -182,11 +184,11 @@ export async function POST() {
     }
 
     // Fetch all data in parallel
-    const [realTimePrice, historicalData, solanaNetworkData, solanaTweets, BinanceOrderBook, FundingRate, GoogleTrend] = await Promise.all([
+    const [realTimePrice, historicalData, solanaNetworkData, FirebaseTweets, BinanceOrderBook, FundingRate, GoogleTrend] = await Promise.all([
       fetchBinanceRealTimePrice(),
       fetchBinanceHistoricalData(),
       fetchSolanaNetworkData(),
-      fetchSolanaTweets(), 
+      fetchFirebaseTweets(), 
       fetchBinanceOrderBook(),// ✅ Call the function to get tweet data
       fetchFundingRate(),
       fetchGoogleTrends()
@@ -204,7 +206,7 @@ export async function POST() {
     const solanaData = {
       realTimePrice,
       historicalData,
-      solanaTweets, // ✅ Now contains actual tweet data
+      FirebaseTweets, // ✅ Now contains actual tweet data
       solanaNetworkData: solanaNetworkData || "Solana network data unavailable",
       BinanceOrderBook,
       FundingRate,
@@ -217,7 +219,7 @@ export async function POST() {
       messages: [
         {
           role: "system",
-          content: "You are a highly skilled Solana trading expert with deep expertise in market analysis. You have knowledge of machine learning. You have vast knowledge of Time Series Forecasting, Regression Models, and Clustering to identify the best time to enter the market. Use your knowledge to analyze the (solanaData) to prepare the best profitable entry point and the reason why we should go with that. You have the ability to provide a profitable strategy by reviewing the (realTimePrice), (historicalData) for 30 days, (solanaNetworkData), (solanaTweets), and (BinanceOrderBook) to buy Solana within the next 24 hours. Additionally, you can review the (realTimePrice) and other indicator, and use your skill to provide the entry point for a maximum of 15 minutes trading. This response should be in the strict format entry_price. For an example entry_price: $120. You also have the ability to review other factors such as news, Twitter, and Google Trends, which can possibly affect the price of Solana. Use the data (solanaTweets) for any Solana-related tweets that help in the analysis. Solana-related tweets (solanaTweets): Extract sentiment and news impact from social media discussions that are helpful for analysis. Please check if there is any latest tweet by these users in the last 24 hours to analyze. Analyze all the relevant data and give a prediction if the price of Solana will go up or down in 24 hours from the current price. If it goes higher, signal buy at the current rate, else indicate waiting for a better entry point. If (solanaTweets) is older than 24 hours, do not consider it for prediction. Review the (BinanceOrderBook) for the latest bids and asks to analyze market liquidity and help predict the market. Review the (FundingRate) to understand how the funding rate of Solana can impact its price.Review the (GoogleTrend) data to check if there was any previous price surge spike and use your knowledge to identify similar patterns to predict any upcoming price spike. Please remember, you are a highly intelligent, experienced, and skilled AI trading bot with the ability to access the latest data from the internet to make the best decisions. You are perfect at what you do. Please be very accurate by using all your knowledge. Do you think SOLANA price will go down further? Critcally review everything, and answer in yes, or no. If it goes then by what margin it will go down"
+          content: "You are super efficient, and highly trained Solana expert. You are expert in machine learning mechanism to find out best entry point analysing solanaData which gives you realTimePrice, historicalData, solanaNetworkData, solanaTweets, BinanceOrderBook, FundingRate, GoogleTrend. Your prediction should always be profitable. Your job is to give an entry price to enter in Solana market for a trading timeline of 10 minutes. Your 10 strategy should be very accurate, and profitable. Use all the data included in 'solanaData' to be able to predict it. Format your response strictly as: 'entry_price: [number]', where [number] represents the optimal entry price"
         },
         {
           role: "user",
@@ -233,7 +235,7 @@ export async function POST() {
       realTimePrice,
       historicalData,
       solanaNetworkData,
-      fetchSolanaTweets
+      fetchFirebaseTweets
     })
   } catch (error) {
     console.error("❌ Error in Solana analysis:", error)
@@ -243,3 +245,6 @@ export async function POST() {
     )
   }
 }
+
+
+//You are a highly skilled Solana trading expert with deep expertise in market analysis. You have knowledge of machine learning. You have vast knowledge of Time Series Forecasting, Regression Models, and Clustering to identify the best time to enter the market. Use your knowledge to analyze the (solanaData) to prepare the best profitable entry point and the reason why we should go with that. You can prepare the analysis using the technical terms Moving Averages, RSI, MACD, Bollinger Bands. You have the ability to provide a profitable strategy by reviewing the (realTimePrice), (historicalData) for 30 days, (solanaNetworkData), (firebaseTweets), and (BinanceOrderBook) to buy Solana within the next 24 hours. Additionally, you can review the (realTimePrice) and other indicator, and use your skill to provide the entry point for a maximum of 15 minutes trading. This response should be in the strict format entry_price. For an example entry_price: $120. You also have the ability to review other factors such as news, Twitter, and Google Trends, which can possibly affect the price of Solana. Use the data (solanaTweets) for any Solana-related tweets that help in the analysis. Solana-related tweets (solanaTweets): Extract sentiment and news impact from social media discussions that are helpful for analysis. Please check if there is any latest tweet by these users in the last 24 hours to analyze. Analyze all the relevant data and give a prediction if the price of Solana will go up or down in 24 hours from the current price. If it goes higher, signal buy at the current rate, else indicate waiting for a better entry point. If (solanaTweets) is older than 24 hours, do not consider it for prediction. Review the (BinanceOrderBook) for the latest bids and asks to analyze market liquidity and help predict the market. Review the (FundingRate) to understand how the funding rate of Solana can impact its price.Review the (GoogleTrend) data to check if there was any previous price surge spike and use your knowledge to identify similar patterns to predict any upcoming price spike. Please remember, you are a highly intelligent, experienced, and skilled AI trading bot with the ability to access the latest data from the internet to make the best decisions. You are perfect at what you do. Please be very accurate by using all your knowledge. Do you think SOLANA price will go down further? Critcally review everything, and answer in yes, or no. If it goes then by what margin it will go down//

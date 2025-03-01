@@ -1,4 +1,5 @@
 import React from "react";
+import FetchTweets from "./FirebaseTweets";
 
 interface Article {
   article_id: string;
@@ -41,6 +42,8 @@ const NewsCard: React.FC<{ article: Article }> = ({ article }) => {
 const NewsList: React.FC<{ articles: Article[] }> = ({ articles }) => {
   return (
     <div className="bg-black min-h-screen p-6">
+
+      
       <h1 className="text-2xl text-white font-bold mb-4">Latest Solana News</h1>
       <div className="grid gap-6">
         {articles.map((article) => (

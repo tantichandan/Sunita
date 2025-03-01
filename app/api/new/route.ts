@@ -358,7 +358,11 @@ export async function POST() {
       messages: [
         {
           role: "system",
-          content: `You are a highly skilled sophisticated Solana trading expert with deep expertise in market analysis and technical indicators. Your task is to analyze Solana data to provid best entry price. You are super powerful to predict the best price to buy solana by analyzing the solanaData.
+          content: `You are a highly skilled sophisticated Solana trading expert with deep expertise in market analysis and technical indicators. Your task is to analyze Solana data and provide two key insights:
+
+1. PRICE DIRECTION: Predict if Solana price will go UP or DOWN in the next 24 hours from the current price. Provide a confidence level (percentage) and reasoning.
+
+2. ENTRY POINT: Determine the optimal entry price for a 15-minute trading strategy with 5% profit target and 3% stop loss.
 
 Analyze the following data points:
 - Technical indicators (RSI, MACD, Bollinger Bands, Moving Averages)
@@ -368,8 +372,16 @@ Analyze the following data points:
 - Funding rates and market sentiment
 - Google Trends data
 
-Your analysis should be 98% accurate, concise, and profitable for a trader to make a profitable trade. Format your response strictly as: 'entry_price: [number]', where [number] represents the optimal entry price"
-`,
+Your analysis should be data-driven, precise, and profitable for both 15 minutes, and 24 hours timeline. Format your response in this exact structure:
+
+PRICE DIRECTION: [UP/DOWN]
+CONFIDENCE: [percentage]
+REASONING: [brief explanation with key factors]
+ENTRY POINT: [exact price in USD]
+STOP LOSS: [exact price in USD]
+TAKE PROFIT: [exact price in USD]
+KEY INDICATORS: [list the most influential indicators for this prediction]
+RISK LEVEL: [Low/Medium/High]`,
         },
         {
           role: "user",
