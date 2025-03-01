@@ -12,7 +12,7 @@ const openai = new OpenAI({
 // API URLs
 const FUNDING_RATE_URL = "https://fapi.binance.com/fapi/v1/fundingRate?symbol=SOLUSDT"
 const BINANCE_ORDER_BOOK_URL = "https://api.binance.com/api/v3/depth?symbol=SOLUSDT&limit=50"
-const FIRE_BASE_URL = "http://localhost:3000/api/firebase1"
+const FIRE_BASE_URL = "https://sunitaai.vercel.app/api/firebase1"
 const BINANCE_REALTIME_URL = "https://api.binance.com/api/v3/ticker/price?symbol=SOLUSDT"
 const BINANCE_HISTORICAL_URL = "https://api.binance.com/api/v3/klines?symbol=SOLUSDT&interval=1h&limit=2000" // Last 30 days
 
