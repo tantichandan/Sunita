@@ -10,9 +10,7 @@ export default function BalancePage() {
   const [loading, setLoading] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string>("");
 
-  /**
-   * ✅ Fetch Balance from `/api/get-balance`
-   */
+  
   const fetchBalance = async () => {
     setLoading(true);
     setErrorMessage("");

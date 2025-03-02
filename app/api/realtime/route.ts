@@ -368,7 +368,7 @@ Analyze the following data points:
 - Funding rates and market sentiment
 - Google Trends data
 
-Your analysis should be 98% accurate, concise, and profitable for a trader to make a profitable trade. Format your response strictly as: 'entry_price: [number]', where [number] represents the optimal entry price"
+Your analysis should be 100% accurate, concise, and profitable for a trader to make a profitable trade. You are expert in giving entry point for short terms trading that can last up to 15 minutes. Review both historical data, realtime data, and other available indices available in solanaData to predict the entry price for 15 minutes trading. You are super powerful in predicting the realtime price to enter the solana market when you have the data available. Format your response strictly as: 'entry_price: [number]', where [number] represents the optimal entry price"
 `,
         },
         {
