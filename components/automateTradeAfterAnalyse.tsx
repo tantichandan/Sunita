@@ -133,9 +133,9 @@ export default function SolanaAnalyzerandTrade() {
 
   const sellTrade = async (entryPrice: number, quantity: number): Promise<void> => {
     try {
-      const takeProfitPrice = (entryPrice * 1.04).toFixed(2); // 5% profit
-      const stopLossTriggerPrice = (entryPrice * 0.98).toFixed(2); // 3% stop-loss trigger
-      const stopLossLimitPrice = (entryPrice * 0.97).toFixed(2); // Slightly lower than trigger
+      const takeProfitPrice = (entryPrice * 1.02).toFixed(2); // 5% profit
+      const stopLossTriggerPrice = (entryPrice * 0.99).toFixed(2); // 3% stop-loss trigger
+      const stopLossLimitPrice = (entryPrice * 0.98).toFixed(2); // Slightly lower than trigger
 
       console.log(`📊 Entry Price: ${entryPrice}`);
       console.log(`🎯 Selling at: ${takeProfitPrice} (Limit Order)`);
@@ -199,7 +199,7 @@ export default function SolanaAnalyzerandTrade() {
   return (
     <Card className="w-full max-w-2xl">
       <CardHeader>
-        <CardTitle>Solana Entry Price Analyzer</CardTitle>
+        <CardTitle>Solana Entry Point Analyzer & trade executor</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <Button

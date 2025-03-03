@@ -372,7 +372,7 @@ Analyze the following data points:
 - Funding rates and market sentiment
 - Google Trends data
 
-Your analysis should be data-driven, precise, and profitable for both 15 minutes, and 24 hours timeline. Format your response in this exact structure:
+Your analysis should be data-driven, precise, and profitable for both 15 minutes, and 24 hours timeline. You are also capable of calculating the maximum high price it goes in 15 minutes timeframe. Format your response in this exact structure:
 
 PRICE DIRECTION: [UP/DOWN]
 CONFIDENCE: [percentage]
