@@ -7,6 +7,8 @@ import TweetsComponent from "@/components/FirebaseTweets"
 import FetchTweets from "@/components/FirebaseTweets"
 import SolanaTweets1 from "@/components/FirebaseTweets"
 import SolanaAnalyzer1 from "@/components/New"
+import SolanaPredictionDashboard from "@/components/Newpro"
+
 import NewestTweets from "@/components/NewTweet"
 
 import OrderPage from "@/components/OrderHistory"
@@ -16,6 +18,7 @@ import SolanaAnalyzer from "@/components/SolanaAnalyzer"
 import SolanaPriceMonitor from "@/components/SolanaPriceMonitor"
 import TradeMonitor from "@/components/TradeMonitor"
 import NewestTweets1 from "@/components/Tweet"
+
 
 export default function Home() {
   return (
@@ -53,6 +56,8 @@ export default function Home() {
       <section className="w-full max-w-6xl p-6 bg-white shadow-lg rounded-lg mb-8">
         <OrderPage />
       </section>
+
+      
 
       {/* Section: Tweets and News */}
       <section className="w-full max-w-6xl p-6 bg-white shadow-lg rounded-lg mb-8">

@@ -165,16 +165,24 @@ export default function SolanaAnalyzerandTrade() {
       console.log("✅ Take Profit order placed successfully!");
 
       // 🛠 2️⃣ Place Stop-Loss Order
+      const balanceResponse = await fetch("/api/balance", {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+      });
+      const balanceData = await balanceResponse.json();
+      const availableSolBalance = balanceData.available.SOL; // Adjust as needed
+      
+      // Step 2: Place stop-loss order with dynamic quantity
       const stopLossResponse = await fetch("/api/exit-bot", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           symbol: "SOLUSDT",
           side: "SELL",
-          type: "STOP_LOSS_LIMIT", // 🔥 Corrected order type
+          type: "STOP_LOSS_LIMIT", // Correct order type
           stopPrice: stopLossTriggerPrice, // Trigger price
           price: stopLossLimitPrice, // Execution price (slightly lower)
-          quantity: quantity.toFixed(5),
+          quantity: availableSolBalance, // Sell all available SOL
           timeInForce: "GTC",
         }),
       });
