@@ -7,6 +7,7 @@ import TweetsComponent from "@/components/FirebaseTweets"
 import FetchTweets from "@/components/FirebaseTweets"
 import SolanaTweets1 from "@/components/FirebaseTweets"
 import SolanaAnalyzer1 from "@/components/New"
+import SolanaAnalyzerFifteenMinutes from "@/components/Newpro"
 import SolanaPredictionDashboard from "@/components/Newpro"
 
 import NewestTweets from "@/components/NewTweet"
@@ -56,6 +57,12 @@ export default function Home() {
       <section className="w-full max-w-6xl p-6 bg-white shadow-lg rounded-lg mb-8">
         <OrderPage />
       </section>
+
+      <section className="w-full max-w-6xl p-6 bg-white shadow-lg rounded-lg mb-8">
+        <SolanaAnalyzerFifteenMinutes />
+      </section>
+
+
 
       
 

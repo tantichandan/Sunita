@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { Connection } from "@solana/web3.js"
 import OpenAI from "openai"
-import { technicalAnalysis } from "@/lib/technical"
+import { technicalAnalysis } from "@/lib/newtechnical"
 
 
 // Initialize OpenAI
@@ -14,7 +14,7 @@ const FUNDING_RATE_URL = "https://fapi.binance.com/fapi/v1/fundingRate?symbol=SO
 const BINANCE_ORDER_BOOK_URL = "https://api.binance.com/api/v3/depth?symbol=SOLUSDT&limit=50"
 const FIRE_BASE_URL = "https://sunitaai.vercel.app/api/firebase1"
 const BINANCE_REALTIME_URL = "https://api.binance.com/api/v3/ticker/price?symbol=SOLUSDT"
-const BINANCE_HISTORICAL_URL = "https://api.binance.com/api/v3/klines?symbol=SOLUSDT&interval=1h&limit=2000" // Last 30 days
+const BINANCE_HISTORICAL_URL = "https://api.binance.com/api/v3/klines?symbol=SOLUSDT&interval=15m&limit=96" // Last 24 hours of 15-min candles
 
 // Cache mechanism to reduce API calls
 const cache = {
@@ -149,23 +149,24 @@ function detectSentiment(text: string) {
   return "neutral"
 }
 
+function summarizeSentiment(tweets: { sentiment: "positive" | "negative" | "neutral" }[]): {
+  positive: number
+  negative: number
+  neutral: number
+} {
+  const summary: Record<"positive" | "negative" | "neutral", number> = {
+    positive: 0,
+    negative: 0,
+    neutral: 0,
+  }
 
-function summarizeSentiment(tweets: { sentiment: 'positive' | 'negative' | 'neutral' }[]): { positive: number; negative: number; neutral: number } {
-    const summary: Record<'positive' | 'negative' | 'neutral', number> = {
-      positive: 0,
-      negative: 0,
-      neutral: 0,
-    }
-  
-    tweets.forEach((tweet) => {
-      // TypeScript will now know that tweet.sentiment is always one of the valid keys
-      summary[tweet.sentiment]++  // no error here
-    })
-  
-    return summary
+  tweets.forEach((tweet) => {
+    // TypeScript will now know that tweet.sentiment is always one of the valid keys
+    summary[tweet.sentiment]++ // no error here
+  })
+
+  return summary
 }
-
-
 
 async function fetchBinanceOrderBook() {
   try {
@@ -266,6 +267,25 @@ async function fetchBinanceHistoricalData() {
   }
 }
 
+async function fetch15MinCandles() {
+  try {
+    const response = await fetch("https://api.binance.com/api/v3/klines?symbol=SOLUSDT&interval=15m&limit=96")
+    const data = await response.json()
+
+    return data.map((candle: any) => ({
+      time: new Date(candle[0]).toISOString(),
+      open: Number.parseFloat(candle[1]),
+      high: Number.parseFloat(candle[2]),
+      low: Number.parseFloat(candle[3]),
+      close: Number.parseFloat(candle[4]),
+      volume: Number.parseFloat(candle[5]),
+    }))
+  } catch (error) {
+    console.error("❌ Error fetching 15-minute SOLUSDT data from Binance:", error)
+    return null
+  }
+}
+
 async function fetchSolanaNetworkData() {
   const connection = new Connection("https://api.mainnet-beta.solana.com", "confirmed")
   try {
@@ -313,6 +333,7 @@ export async function POST() {
     const [
       realTimePrice,
       historicalData,
+      fifteenMinData,
       solanaNetworkData,
       firebaseTweets,
       binanceOrderBook,
@@ -321,6 +342,7 @@ export async function POST() {
     ] = await Promise.all([
       fetchBinanceRealTimePrice(),
       fetchBinanceHistoricalData(),
+      fetch15MinCandles(),
       fetchSolanaNetworkData(),
       fetchFirebaseTweets(),
       fetchBinanceOrderBook(),
@@ -343,7 +365,9 @@ export async function POST() {
     const solanaData = {
       realTimePrice,
       historicalData: historicalData.slice(-48), // Send only last 48 hours for analysis
+      fifteenMinData: fifteenMinData || [], // 15-minute candles for short-term analysis
       technicalIndicators,
+      fifteenMinIndicators: fifteenMinData ? technicalAnalysis(fifteenMinData) : null,
       firebaseTweets,
       solanaNetworkData: solanaNetworkData || "Solana network data unavailable",
       binanceOrderBook,
@@ -352,52 +376,48 @@ export async function POST() {
     }
 
     // Use OpenAI to analyze the data with an improved prompt
-
     const completion = await openai.chat.completions.create({
-      model: "gpt-4o",
+      model: "gpt-4o", // Upgraded from gpt-4o-mini for better analysis
       temperature: 0.2, // Lower temperature for more consistent results
       messages: [
         {
           role: "system",
-          content: `You are a highly skilled Solana trading expert specializing in short-term price action analysis. Your task is to analyze Solana data and provide precise 15-minute trading predictions.
+          content: `You are a highly skilled sophisticated Solana trading expert with deep expertise in market analysis and technical indicators. Your task is to analyze Solana data and provide precise 15-minute price predictions. Focus on:
 
-Focus exclusively on predicting Solana price movement in the NEXT 15 MINUTES. Your analysis must include:
+1. ACTION RECOMMENDATION: Clearly state if the trader should BUY, SELL, or WAIT based on the 15-minute prediction. Provide a confidence level (percentage).
 
-1. TRADING SIGNAL: Clear BUY, SELL, or WAIT recommendation based on the data
-2. PRICE PREDICTION: Exact price target for Solana in 15 minutes (with decimal precision)
-3. ENTRY POINT: The optimal price to enter a trade now (if recommending BUY or SELL)
-4. CONFIDENCE: Your confidence level in this prediction (percentage)
+2. PRICE PREDICTION: Predict the EXACT price Solana will reach in 15 minutes from now. Be precise with dollar amounts.
 
-Analyze these data points with emphasis on short-term indicators:
-- 1-minute and 5-minute price action patterns
-- Order book depth and liquidity
-- Support/resistance levels
-- Short-term momentum indicators (RSI, MACD)
-- Recent price volatility
-- Buy/sell pressure from order book
+3. ENTRY STRATEGY: If your recommendation is to BUY, provide the optimal entry price. If the price is likely to dip before rising, specify the best entry point.
 
-Your analysis must be extremely precise, actionable, and optimized for 15-minute trading windows. Format your response exactly as follows:
+4. TIME-SENSITIVE FACTORS: Identify any immediate market conditions that could affect the 15-minute price movement.
 
-TRADING SIGNAL: [BUY/SELL/WAIT]
-CURRENT PRICE: [current price in USD]
-PREDICTED PRICE (15 MIN): [exact price in USD]
-PRICE DIRECTION: [UP/DOWN/SIDEWAYS]
-OPTIMAL ENTRY: [exact price in USD]
-STOP LOSS: [exact price in USD]
-TAKE PROFIT: [exact price in USD]
+Analyze the following data points:
+- Technical indicators (RSI, MACD, Bollinger Bands, Moving Averages)
+- Order book data (support/resistance levels, buy/sell pressure)
+- Recent tweets sentiment and volume
+- Network metrics (transaction volume, active addresses)
+- Funding rates and market sentiment
+- Google Trends data
+
+Your analysis must be extremely precise for the 15-minute timeframe. Format your response in this exact structure:
+
+ACTION: [BUY/SELL/WAIT]
 CONFIDENCE: [percentage]
-KEY INDICATORS: [list the most influential short-term indicators]
-REASONING: [brief explanation focusing on 15-minute timeframe factors]
-RISK LEVEL: [Low/Medium/High]`,
+CURRENT PRICE: [current price in USD]
+15-MIN PREDICTION: [exact price in USD]
+OPTIMAL ENTRY: [exact price in USD, if recommending BUY]
+REASONING: [brief explanation with key factors]
+KEY INDICATORS: [list the most influential indicators for this prediction]
+RISK LEVEL: [Low/Medium/High]
+TRADE TIMING: [specific timing advice within the 15-minute window]`,
         },
         {
           role: "user",
-          content: `Here is the latest Solana data for 15-minute trading analysis: ${JSON.stringify(solanaData)}. Please provide your precise 15-minute trading prediction.`,
+          content: `Here is the Solana data for analysis: ${JSON.stringify(solanaData)}. Please provide your 15-minute trading analysis.`,
         },
       ],
     })
-
-   
 
     const analysis = completion.choices[0]?.message?.content || "No analysis generated"
 
@@ -410,6 +430,7 @@ RISK LEVEL: [Low/Medium/High]`,
       parsedAnalysis,
       realTimePrice,
       technicalSummary: technicalIndicators.summary,
+      fifteenMinSummary: fifteenMinData ? technicalAnalysis(fifteenMinData).summary : null,
       marketSentiment: {
         orderBookRatio: binanceOrderBook?.buySellRatio || 1,
         tweetSentiment: firebaseTweets?.sentimentSummary || {},
@@ -435,43 +456,40 @@ RISK LEVEL: [Low/Medium/High]`,
 function parseAnalysisResponse(analysis: string, currentPrice: number) {
   try {
     // Extract key information using regex
-    const directionMatch = analysis.match(/PRICE DIRECTION:\s*(\w+)/i)
+    const actionMatch = analysis.match(/ACTION:\s*(\w+)/i)
     const confidenceMatch = analysis.match(/CONFIDENCE:\s*(\d+)/i)
-    const entryPointMatch = analysis.match(/ENTRY POINT:\s*\$?(\d+\.?\d*)/i)
-    const stopLossMatch = analysis.match(/STOP LOSS:\s*\$?(\d+\.?\d*)/i)
-    const takeProfitMatch = analysis.match(/TAKE PROFIT:\s*\$?(\d+\.?\d*)/i)
+    const predictionMatch = analysis.match(/15-MIN PREDICTION:\s*\$?(\d+\.?\d*)/i)
+    const entryPointMatch = analysis.match(/OPTIMAL ENTRY:\s*\$?(\d+\.?\d*)/i)
     const riskLevelMatch = analysis.match(/RISK LEVEL:\s*(\w+)/i)
+    const tradeTimingMatch = analysis.match(/TRADE TIMING:\s*(.*?)(?=\n|$)/i)
 
     // Calculate default values if not found
+    const prediction = predictionMatch ? Number.parseFloat(predictionMatch[1]) : currentPrice
     const entryPoint = entryPointMatch ? Number.parseFloat(entryPointMatch[1]) : currentPrice
-    const stopLoss = stopLossMatch
-      ? Number.parseFloat(stopLossMatch[1])
-      : directionMatch && directionMatch[1].toUpperCase() === "UP"
-        ? entryPoint * 0.97 // 3% below entry for UP prediction
-        : entryPoint * 1.03 // 3% above entry for DOWN prediction
-    const takeProfit = takeProfitMatch
-      ? Number.parseFloat(takeProfitMatch[1])
-      : directionMatch && directionMatch[1].toUpperCase() === "UP"
-        ? entryPoint * 1.05 // 5% above entry for UP prediction
-        : entryPoint * 0.95 // 5% below entry for DOWN prediction
+    const stopLoss = entryPoint * 0.97 // 3% below entry
+    const takeProfit = entryPoint * 1.05 // 5% above entry
 
     return {
-      direction: directionMatch ? directionMatch[1].toUpperCase() : "UNKNOWN",
+      action: actionMatch ? actionMatch[1].toUpperCase() : "WAIT",
       confidence: confidenceMatch ? Number.parseInt(confidenceMatch[1]) : 0,
+      prediction: prediction.toFixed(2),
       entryPoint: entryPoint.toFixed(2),
       stopLoss: stopLoss.toFixed(2),
       takeProfit: takeProfit.toFixed(2),
       riskLevel: riskLevelMatch ? riskLevelMatch[1] : "Medium",
+      tradeTiming: tradeTimingMatch ? tradeTimingMatch[1] : "As soon as possible",
     }
   } catch (error) {
     console.error("Error parsing analysis:", error)
     return {
-      direction: "UNKNOWN",
+      action: "WAIT",
       confidence: 0,
+      prediction: currentPrice.toFixed(2),
       entryPoint: currentPrice.toFixed(2),
       stopLoss: (currentPrice * 0.97).toFixed(2),
       takeProfit: (currentPrice * 1.05).toFixed(2),
       riskLevel: "Medium",
+      tradeTiming: "Wait for clearer signals",
     }
   }
 }
